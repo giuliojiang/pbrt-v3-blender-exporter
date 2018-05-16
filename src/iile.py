@@ -33,8 +33,6 @@ class IILERenderEngine(bpy.types.RenderEngine):
     bl_use_preview = False # capabilities
 
     def render(self, scene):
-        bpy.ops.export_scene.obj(filepath="/tmp/t.obj", axis_forward="Y", axis_up="-Z", use_materials=True)
-        return
 
         scale = scene.render.resolution_percentage / 100.0
         sx = int(scene.render.resolution_x * scale)
@@ -44,8 +42,6 @@ class IILERenderEngine(bpy.types.RenderEngine):
 
         # Compute pbrt executale path
         pbrtExecPath = os.path.join(scene.iilePath, "build", "pbrt")
-        print("pbrtExecPath is {}".format(pbrtExecPath))
-        print("it exists? {}".format(os.path.exists(pbrtExecPath)))
         obj2pbrtExecPath = os.path.join(scene.iilePath, "build", "obj2pbrt")
 
         # Get the output path
@@ -57,13 +53,26 @@ class IILERenderEngine(bpy.types.RenderEngine):
         outExp2PbrtPath = os.path.join(outDir, "exp2.pbrt")
         outScenePath = os.path.join(outDir, "scene.pbrt")
 
-        # Export OBJ and MTL files
-        bpy.ops.export_scene.obj(
-            filepath=outObjPath,
-            axis_forward="Y",
-            axis_up="-Z",
-            use_materials=True
-        )
+        # Create exporting script
+        expScriptPath = os.path.join(outDir, "exp.py")
+        expScriptFile = open(expScriptPath, "w")
+        wline(expScriptFile, 'import bpy')
+        wline(expScriptFile, 'outobj = "{}"'.format(outObjPath))
+        wline(expScriptFile, 'bpy.ops.export_scene.obj(filepath=outobj, axis_forward="Y", axis_up="-Z", use_materials=True)')
+        expScriptFile.close()
+
+        blenderPath = bpy.app.binary_path
+        projectPath = bpy.data.filepath
+
+        cmd = [
+            blenderPath,
+            projectPath,
+            "--background",
+            "--python",
+            expScriptPath
+        ]
+        runCmd(cmd)
+
         print("OBJ export completed")
 
         # Run obj2pbrt
