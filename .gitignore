@@ -2,3 +2,5 @@
 *.blend2
 *.obj
 *.mtl
+tmp/exp.pbrt
+tmp/scene.pbrt
