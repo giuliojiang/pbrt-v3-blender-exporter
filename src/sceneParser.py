@@ -81,7 +81,7 @@ class SceneBlock():
         return self.getBlockType() == "MakeNamedMaterial"
 
     def getMaterialDefinitionName(self):
-        first = self.lines[0]
+        first = self.lines[0].rstrip()
         splt = first.split(" ")
         return " ".join(splt[1:]).replace('"', '')
 
@@ -162,7 +162,7 @@ for b in blocks:
         b.replaceLine(3, '"rgb L"', '"rgb L" [ 99 99 99 ]')
         print(b.toString())
     if b.isMakeNamedMaterial():
-        print("Found named material {}".format(b.getMaterialDefinitionName()))
+        print("Found named material [{}]".format(b.getMaterialDefinitionName()))
         b.clearBody()
         b.appendLine(2, "yoyuo")
         print(b.toString())
