@@ -1,3 +1,8 @@
+bl_info = {
+    "name": "PBRTv3 Exporter",
+    "category": "Render"
+}
+
 import bpy
 from bl_ui import (
     properties_render,
@@ -152,7 +157,7 @@ class RENDER_PT_output(properties_render.RenderButtonsPanel, Panel):
         layout.prop(rd, "filepath", text="")
 
 class RENDER_PT_iile(properties_render.RenderButtonsPanel, Panel):
-    bl_label = "IILE Settings"
+    bl_label = "PBRT Build Path"
     COMPAT_ENGINES = {IILERenderEngine.bl_idname}
 
     def draw(self, context):
@@ -197,8 +202,8 @@ def register():
     Scene = bpy.types.Scene
 
     Scene.iilePath = bpy.props.StringProperty(
-        name="IILE project path",
-        description="Directory of IILE's project files",
+        name="PBRT build path",
+        description="Directory that contains the pbrt executable",
         default=DEFAULT_IILE_PROJECT_PATH
     )
 
