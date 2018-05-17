@@ -9,6 +9,8 @@ def lineIndentTabs(l):
             count += 1
         else:
             break
+    if (count % TABSIZE) != 0:
+        return 0
     return count / TABSIZE
 
 def indentBy(l, levels):
@@ -52,6 +54,41 @@ class SceneBlock():
                     transformedLine = indentBy(newStr, level)
                     self.lines[i] = transformedLine
 
+    # Matching function
+    def contains(self, level, startMatch):
+        for i in range(len(self.lines)):
+            l = self.lines[i]
+            if lineIndentTabs(l) == level:
+                rawLine = l[(TABSIZE * level):]
+                if rawLine.startswith(startMatch):
+                    return True
+        return False
+
+    def findLine(self, level, startMatch):
+        for i in range(len(self.lines)):
+            l = self.lines[i]
+            if lineIndentTabs(l) == level:
+                rawLine = l[(TABSIZE * level):]
+                if rawLine.startswith(startMatch):
+                    return rawLine
+        return None
+
+    # Finds AttributeBegin->AreaLightSource blocks
+    def isAreaLightSource(self):
+        return (self.getBlockType() == "AttributeBegin") and (self.contains(1, "AreaLightSource"))
+
+    def getAssignedMaterial(self):
+        if self.getBlockType() == "AttributeBegin":
+            line = self.findLine(1, "NamedMaterial")
+            splt = line.split(" ")
+            if len(splt) > 0:
+                selection = splt[1:]
+                return " ".join(selection).replace('"', '')
+            else:
+                return None
+        else:
+            return None
+
 # Represents the entire parsed scenefile
 class SceneDocument():
 
@@ -84,13 +121,17 @@ class SceneDocument():
 
         self.blocks = sceneBlocks
 
-    def printAllBlocks(self):
-        for b in self.blocks:
-            print("====== BLOCKSTART ====== ")
-            print(b.toString())
+    def getBlocks(self):
+        return self.blocks
 
 # Main
 doc = SceneDocument()
 doc.parse("tmp/scene.pbrt")
-doc.printAllBlocks()
-print("ALL BLOCKS PRINTED")
+
+# Find block with arealightsource
+blocks = doc.getBlocks()
+for b in blocks:
+    if b.isAreaLightSource():
+        print("Found the Area light source")
+        print(b.toString())
+        print(b.getAssignedMaterial())
