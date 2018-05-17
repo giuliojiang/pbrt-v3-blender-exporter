@@ -77,6 +77,18 @@ class SceneBlock():
     def isAreaLightSource(self):
         return (self.getBlockType() == "AttributeBegin") and (self.contains(1, "AreaLightSource"))
 
+    def isMakeNamedMaterial(self):
+        return self.getBlockType() == "MakeNamedMaterial"
+
+    def getMaterialDefinitionName(self):
+        first = self.lines[0]
+        splt = first.split(" ")
+        return " ".join(splt[1:]).replace('"', '')
+
+    def clearBody(self):
+        if len(self.lines) >= 1:
+            self.lines = self.lines[0:1]
+
     def getAssignedMaterial(self):
         if self.getBlockType() == "AttributeBegin":
             line = self.findLine(1, "NamedMaterial")
@@ -88,6 +100,9 @@ class SceneBlock():
                 return None
         else:
             return None
+
+    def appendLine(self, level, content):
+        self.lines.append(indentBy(content, level))
 
 # Represents the entire parsed scenefile
 class SceneDocument():
@@ -124,9 +139,17 @@ class SceneDocument():
     def getBlocks(self):
         return self.blocks
 
-# Main
+    def write(self, outPath):
+        outFile = open(outPath, 'w')
+        for block in self.blocks:
+            outFile.write("{}\n".format(block.toString()))
+        outFile.close()
+
+# Scene parser end =============================================================
+
+# Main =========================================================================
 doc = SceneDocument()
-doc.parse("tmp/scene.pbrt")
+doc.parse("tmp/sceneOriginal.pbrt")
 
 # Find block with arealightsource
 blocks = doc.getBlocks()
@@ -135,3 +158,12 @@ for b in blocks:
         print("Found the Area light source")
         print(b.toString())
         print(b.getAssignedMaterial())
+        print("Replacing...")
+        b.replaceLine(3, '"rgb L"', '"rgb L" [ 99 99 99 ]')
+        print(b.toString())
+    if b.isMakeNamedMaterial():
+        print("Found named material {}".format(b.getMaterialDefinitionName()))
+        b.clearBody()
+        b.appendLine(2, "yoyuo")
+        print(b.toString())
+doc.write("tmp/sceneTrans.pbrt")
