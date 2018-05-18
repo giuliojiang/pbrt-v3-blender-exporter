@@ -202,6 +202,7 @@ class IILERenderEngine(bpy.types.RenderEngine):
         # Compute pbrt executale path
         pbrtExecPath = os.path.join(scene.iilePath, "pbrt")
         obj2pbrtExecPath = os.path.join(scene.iilePath, "obj2pbrt")
+        rootDir = os.path.abspath(os.path.join(scene.iilePath, ".."))
 
         # Get the output path
         outDir = bpy.data.scenes["Scene"].render.filepath
@@ -256,9 +257,21 @@ class IILERenderEngine(bpy.types.RenderEngine):
         outSceneFile = open(outScenePath, "w")
 
         # Create headers
+
         wline(outSceneFile, 'Film "image" "integer xresolution" {} "integer yresolution" {}'.format(sx, sy))
-        wline(outSceneFile, 'Integrator "path"')
+
+        integratorName = "path"
+        if bpy.context.scene.iileIntegrator == "PATH":
+            integratorName = "path"
+        elif bpy.context.scene.iileIntegrator == "IILE":
+            integratorName = "iispt"
+        else:
+            raise Exception("Unrecognized iileIntegrator {}".format(
+                bpy.context.scene.iileIntegrator))
+        wline(outSceneFile, 'Integrator "{}"'.format(integratorName))
+
         wline(outSceneFile, 'Sampler "sobol" "integer pixelsamples" 1')
+
         wline(outSceneFile, 'Scale -1 1 1')
 
         # Get camera
@@ -345,6 +358,27 @@ class IILERenderEngine(bpy.types.RenderEngine):
         doc.write(outScenePath)
 
         print("Rendering finished.")
+
+        if bpy.context.scene.iileStartRenderer:
+            print("Starting IILE GUI...")
+            guiDir = os.path.join(rootDir, "gui")
+            electronPath = os.path.join(guiDir,
+                "node_modules",
+                "electron",
+                "dist",
+                "electron")
+            jsPbrtPath = os.path.join(rootDir,
+                "bin",
+                "pbrt")
+            cmd = []
+            cmd.append(electronPath)
+            cmd.append("main.js")
+            cmd.append(jsPbrtPath)
+            cmd.append(outScenePath)
+            cmd.append("16")
+            cmd.append("16")
+            runCmd(cmd, cwd=guiDir)
+
         result = self.begin_result(0, 0, sx, sy)
         self.end_result(result)
 
@@ -357,7 +391,7 @@ class RENDER_PT_output(properties_render.RenderButtonsPanel, Panel):
     def draw(self, context):
         layout = self.layout
         rd = context.scene.render
-        layout.prop(rd, "filepath", text="")
+        layout.prop(rd, "filepath", text="Exporter output directory")
 
 class RENDER_PT_iile(properties_render.RenderButtonsPanel, Panel):
     bl_label = "PBRT Build Path"
@@ -366,7 +400,9 @@ class RENDER_PT_iile(properties_render.RenderButtonsPanel, Panel):
     def draw(self, context):
         layout = self.layout
         s = context.scene
-        layout.prop(s, "iilePath", text="")
+        layout.prop(s, "iilePath", text="PBRT binaries directory")
+        layout.prop(s, "iileStartRenderer", text="Autostart IILE GUI")
+        layout.prop(s, "iileIntegrator", text="Integrator")
 
 class MATERIAL_PT_material(properties_material.MaterialButtonsPanel, Panel):
     bl_label = "Material"
@@ -377,10 +413,10 @@ class MATERIAL_PT_material(properties_material.MaterialButtonsPanel, Panel):
 
         mat = properties_material.active_node_mat(context.material)
 
-        layout.prop(mat, "iileMaterial", text="material")
+        layout.prop(mat, "iileMaterial", text="Surface type")
 
         if mat.iileMaterial == "MATTE":
-            layout.prop(mat, "iileMatteColor", text="")
+            layout.prop(mat, "iileMatteColor", text="Diffuse color")
 
 class MATERIAL_PT_emission(properties_material.MaterialButtonsPanel, Panel):
     bl_label = "Emission"
@@ -391,9 +427,9 @@ class MATERIAL_PT_emission(properties_material.MaterialButtonsPanel, Panel):
 
         mat = properties_material.active_node_mat(context.material)
 
-        layout.prop(mat, "emit", text="emission")
+        layout.prop(mat, "emit", text="Emission Intensity")
 
-        layout.prop(mat, "iileEmission", text="emission color")
+        layout.prop(mat, "iileEmission", text="Emission color")
 
 # Register ==================================================================
 
@@ -408,6 +444,21 @@ def register():
         name="PBRT build path",
         description="Directory that contains the pbrt executable",
         default=DEFAULT_IILE_PROJECT_PATH
+    )
+
+    Scene.iileStartRenderer = bpy.props.BoolProperty(
+        name="Start IILE renderer",
+        description="Automatically start IILE renderer after exporting. Not compatible with vanilla PBRTv3",
+        default=False
+    )
+
+    Scene.iileIntegrator = bpy.props.EnumProperty(
+        name="Integrator",
+        description="Surface Integrator",
+        items=[
+            ("PATH", "Path", "Path Integrator"),
+            ("IILE", "IILE", "IILE Integrator")
+        ]
     )
 
     Mat = bpy.types.Material
