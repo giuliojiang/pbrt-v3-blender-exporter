@@ -270,7 +270,17 @@ class IILERenderEngine(bpy.types.RenderEngine):
                 bpy.context.scene.iileIntegrator))
         wline(outSceneFile, 'Integrator "{}"'.format(integratorName))
 
-        wline(outSceneFile, 'Sampler "sobol" "integer pixelsamples" 1')
+        samplerName = "random"
+        if bpy.context.scene.iileIntegratorPathSampler == "RANDOM":
+            samplerName = "random"
+        elif bpy.context.scene.iileIntegratorPathSampler == "SOBOL":
+            samplerName = "sobol"
+        elif bpy.context.scene.iileIntegratorPathSampler == "HALTON":
+            samplerName = "halton"
+        else:
+            raise Exception("Unrecognized sampler {}".format(bpy.context.scene.iileIntegratorPathSampler))
+
+        wline(outSceneFile, 'Sampler "{}" "integer pixelsamples" {}'.format(samplerName, bpy.context.scene.iileIntegratorPathSamples))
 
         wline(outSceneFile, 'Scale -1 1 1')
 
@@ -359,7 +369,7 @@ class IILERenderEngine(bpy.types.RenderEngine):
 
         print("Rendering finished.")
 
-        if bpy.context.scene.iileStartRenderer:
+        if (bpy.context.scene.iileIntegrator == "IILE") and bpy.context.scene.iileStartRenderer:
             print("Starting IILE GUI...")
             guiDir = os.path.join(rootDir, "gui")
             electronPath = os.path.join(guiDir,
@@ -375,8 +385,8 @@ class IILERenderEngine(bpy.types.RenderEngine):
             cmd.append("main.js")
             cmd.append(jsPbrtPath)
             cmd.append(outScenePath)
-            cmd.append("16")
-            cmd.append("16")
+            cmd.append("{}".format(bpy.context.scene.iileIntegratorIileIndirect))
+            cmd.append("{}".format(bpy.context.scene.iileIntegratorIileDirect))
             runCmd(cmd, cwd=guiDir)
 
         result = self.begin_result(0, 0, sx, sy)
@@ -399,10 +409,23 @@ class RENDER_PT_iile(properties_render.RenderButtonsPanel, Panel):
 
     def draw(self, context):
         layout = self.layout
+
         s = context.scene
         layout.prop(s, "iilePath", text="PBRT binaries directory")
-        layout.prop(s, "iileStartRenderer", text="Autostart IILE GUI")
+
         layout.prop(s, "iileIntegrator", text="Integrator")
+
+        if bpy.context.scene.iileIntegrator == "IILE":
+            layout.prop(s, "iileStartRenderer", text="Autostart IILE GUI")
+            layout.prop(s, "iileIntegratorIileIndirect", text="Indirect")
+            layout.prop(s, "iileIntegratorIileDirect", text="Direct")
+
+        elif bpy.context.scene.iileIntegrator == "PATH":
+            layout.prop(s, "iileIntegratorPathSampler", text="Sampler")
+            layout.prop(s, "iileIntegratorPathSamples", text="Samples")
+
+        else:
+            raise Exception("Unsupported integrator {}".format(bpy.context.scene.iileIntegrator))
 
 class MATERIAL_PT_material(properties_material.MaterialButtonsPanel, Panel):
     bl_label = "Material"
@@ -459,6 +482,37 @@ def register():
             ("PATH", "Path", "Path Integrator"),
             ("IILE", "IILE", "IILE Integrator")
         ]
+    )
+
+    Scene.iileIntegratorIileIndirect = bpy.props.IntProperty(
+        name="Indirect Tasks",
+        description="Number of IILE Indirect Tasks to be executed",
+        default=16,
+        min=0
+    )
+
+    Scene.iileIntegratorIileDirect = bpy.props.IntProperty(
+        name="Direct Samples",
+        description="Number of Direct Illumination samples",
+        default=16,
+        min=1
+    )
+
+    Scene.iileIntegratorPathSampler = bpy.props.EnumProperty(
+        name="Sampler",
+        description="Sampler",
+        items=[
+            ("RANDOM", "Random", "Random Sampler"),
+            ("SOBOL", "Sobol", "Sobol Sampler"),
+            ("HALTON", "Halton", "Halton Sampler")
+        ]
+    )
+
+    Scene.iileIntegratorPathSamples = bpy.props.IntProperty(
+        name="Samples",
+        description="Number of samples/px",
+        default=4,
+        min=1
     )
 
     Mat = bpy.types.Material
