@@ -104,6 +104,10 @@ class SceneBlock():
     def appendLine(self, level, content):
         self.lines.append(indentBy(content, level))
 
+    def addBeginning(self, level, content):
+        newLine = indentBy(content, level)
+        self.lines = [newLine] + self.lines
+
 # Represents the entire parsed scenefile
 class SceneDocument():
 
@@ -148,22 +152,23 @@ class SceneDocument():
 # Scene parser end =============================================================
 
 # Main =========================================================================
-doc = SceneDocument()
-doc.parse("tmp/sceneOriginal.pbrt")
+def mainTest():
+    doc = SceneDocument()
+    doc.parse("tmp/sceneOriginal.pbrt")
 
-# Find block with arealightsource
-blocks = doc.getBlocks()
-for b in blocks:
-    if b.isAreaLightSource():
-        print("Found the Area light source")
-        print(b.toString())
-        print(b.getAssignedMaterial())
-        print("Replacing...")
-        b.replaceLine(3, '"rgb L"', '"rgb L" [ 99 99 99 ]')
-        print(b.toString())
-    if b.isMakeNamedMaterial():
-        print("Found named material [{}]".format(b.getMaterialDefinitionName()))
-        b.clearBody()
-        b.appendLine(2, "yoyuo")
-        print(b.toString())
-doc.write("tmp/sceneTrans.pbrt")
+    # Find block with arealightsource
+    blocks = doc.getBlocks()
+    for b in blocks:
+        if b.isAreaLightSource():
+            print("Found the Area light source")
+            print(b.toString())
+            print(b.getAssignedMaterial())
+            print("Replacing...")
+            b.replaceLine(3, '"rgb L"', '"rgb L" [ 99 99 99 ]')
+            print(b.toString())
+        if b.isMakeNamedMaterial():
+            print("Found named material [{}]".format(b.getMaterialDefinitionName()))
+            b.clearBody()
+            b.appendLine(2, "yoyuo")
+            print(b.toString())
+    doc.write("tmp/sceneTrans.pbrt")
