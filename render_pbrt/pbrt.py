@@ -23,9 +23,18 @@ configDir = bpy.utils.user_resource('CONFIG', path='scripts', create=True)
 pbrtConfigPath = os.path.join(configDir, "pbrt.json")
 
 if not os.path.exists(pbrtConfigPath):
-    # Copy default configuration in
-    defaultConfigPath = os.path.join(currDir, "defaultConf.json")
-    shutil.copy(defaultConfigPath, pbrtConfigPath)
+    # Create default configuration
+    # Try to find an IILE directory within the scripts directory
+    pbrtBuildDir = os.path.join(currDir, "PBRT-IILE", "iile", "build")
+    if not os.path.exists(pbrtBuildDir):
+        pbrtBuildDir = ""
+
+    data = {}
+    data["pbrtBin"] = pbrtBuildDir
+
+    pbrtConfigFile = open(pbrtConfigPath, "w")
+    pbrtConfigFile.write(json.dumps(data))
+    pbrtConfigFile.close()
 
 # Parse the config file
 configFile = open(pbrtConfigPath, "r")
@@ -33,6 +42,13 @@ configFileContent = configFile.read()
 configFile.close()
 configDict = json.loads(configFileContent)
 DEFAULT_IILE_PROJECT_PATH = configDict["pbrtBin"]
+
+def updateConfiguration(pbrtBinPath):
+    data = {}
+    data["pbrtBin"] = os.path.abspath(pbrtBinPath)
+    configFile = open(pbrtConfigPath, "w")
+    configFile.write(json.dumps(data))
+    configFile.close()
 
 # Utilities ===============================================================================
 
@@ -69,7 +85,14 @@ class IILERenderEngine(bpy.types.RenderEngine):
 
         # Check if iilePath exists
         if not os.path.exists(scene.iilePath):
-            raise Exception("Specified PBRT binaries path does not exist")
+            # Check fallback
+            if not os.path.exists(DEFAULT_IILE_PROJECT_PATH):
+                raise Exception("Specified PBRT binaries path does not exist")
+            else:
+                scene.iilePath = DEFAULT_IILE_PROJECT_PATH
+
+        # Save to configuration
+        updateConfiguration(scene.iilePath)
 
         # Compute pbrt executale path
         pbrtExecPath = os.path.join(scene.iilePath, "pbrt")
