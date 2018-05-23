@@ -13,7 +13,7 @@ import shutil
 import json
 
 import sceneParser
-
+import install
 
 # =============================================================================
 # Find config storage path
@@ -77,26 +77,44 @@ class IILERenderEngine(bpy.types.RenderEngine):
 
     def render(self, scene):
 
+        # Check first-run installation
+        install.install()
+
+        # Compute film dimensions
         scale = scene.render.resolution_percentage / 100.0
         sx = int(scene.render.resolution_x * scale)
         sy = int(scene.render.resolution_y * scale)
 
         print("Starting render, resolution {} {}".format(sx, sy))
 
-        # Check if iilePath exists
+        # Compute pbrt executable path
+        pbrtExecPath = install.getExecutablePath(
+            scene.iilePath,
+            DEFAULT_IILE_PROJECT_PATH,
+            "pbrt"
+        )
+        obj2pbrtExecPath = install.getExecutablePath(
+            scene.iilePath,
+            DEFAULT_IILE_PROJECT_PATH,
+            "obj2pbrt"
+        )
+
+        if pbrtExecPath is None:
+            raise Exception("PBRT executable not found")
+        if obj2pbrtExecPath is None:
+            raise Exception("OBJ2PBRT executable not found")
+
+        print("PBRT: {}".format(pbrtExecPath))
+        print("OBJ2PBRT: {}".format(obj2pbrtExecPath))
+
+        # Determine PBRT project directory
         if not os.path.exists(scene.iilePath):
             # Check fallback
             if not os.path.exists(DEFAULT_IILE_PROJECT_PATH):
-                raise Exception("Specified PBRT binaries path does not exist")
+                print("WARNING no project directory found. Are you using vanilla PBRTv3? Some features might not work, such as IILE integrator and GUI renderer")
             else:
                 scene.iilePath = DEFAULT_IILE_PROJECT_PATH
 
-        # Save to configuration
-        updateConfiguration(scene.iilePath)
-
-        # Compute pbrt executale path
-        pbrtExecPath = os.path.join(scene.iilePath, "pbrt")
-        obj2pbrtExecPath = os.path.join(scene.iilePath, "obj2pbrt")
         rootDir = os.path.abspath(os.path.join(scene.iilePath, ".."))
 
         # Get the output path
@@ -286,6 +304,17 @@ class IILERenderEngine(bpy.types.RenderEngine):
 
         if (bpy.context.scene.iileIntegrator == "IILE") and bpy.context.scene.iileStartRenderer:
             print("Starting IILE GUI...")
+
+            # Setup PATH for nodejs executable
+            nodeBinDir = install.findNodeDir(scene.iilePath)
+            if nodeBinDir is not None:
+                oldPath = os.environ["PATH"]
+                addition = ':"{}"'.format(nodeBinDir)
+                if not oldPath.endswith(addition):
+                    oldPath = oldPath + addition
+                os.environ["PATH"] = oldPath
+                print("Updated PATH to {}".format(oldPath))
+
             guiDir = os.path.join(rootDir, "gui")
             electronPath = os.path.join(guiDir,
                 "node_modules",
