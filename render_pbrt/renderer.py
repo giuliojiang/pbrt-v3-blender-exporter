@@ -108,7 +108,7 @@ def processPlasticMaterial(matName, outDir, block, matObj):
 
 class IILERenderEngine(bpy.types.RenderEngine):
     bl_idname = "iile_renderer" # internal name
-    bl_label = "IILE Renderer" # Visible name
+    bl_label = "PBRTv3" # Visible name
     bl_use_preview = False # capabilities
 
     def render(self, scene):

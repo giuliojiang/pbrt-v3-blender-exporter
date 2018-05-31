@@ -47,7 +47,7 @@ class RENDER_PT_iile(properties_render.RenderButtonsPanel, Panel):
         layout.prop(s, "iileIntegrator", text="Integrator")
 
         if bpy.context.scene.iileIntegrator == "IILE":
-            layout.prop(s, "iileStartRenderer", text="Autostart IILE GUI")
+            layout.prop(s, "iileStartRenderer", text="Autostart OSR GUI")
             layout.prop(s, "iileIntegratorIileIndirect", text="Indirect")
             layout.prop(s, "iileIntegratorIileDirect", text="Direct")
 
@@ -111,8 +111,8 @@ def register():
     )
 
     Scene.iileStartRenderer = bpy.props.BoolProperty(
-        name="Start IILE renderer",
-        description="Automatically start IILE renderer after exporting. Not compatible with vanilla PBRTv3",
+        name="Start OSR renderer",
+        description="Automatically start OSR renderer after exporting. Not compatible with vanilla PBRTv3",
         default=False
     )
 
@@ -121,13 +121,13 @@ def register():
         description="Surface Integrator",
         items=[
             ("PATH", "Path", "Path Integrator"),
-            ("IILE", "IILE", "IILE Integrator")
+            ("IILE", "OSR", "OSR Integrator")
         ]
     )
 
     Scene.iileIntegratorIileIndirect = bpy.props.IntProperty(
         name="Indirect Tasks",
-        description="Number of IILE Indirect Tasks to be executed",
+        description="Number of OSR Indirect Tasks to be executed",
         default=16,
         min=0
     )
@@ -159,7 +159,7 @@ def register():
     Mat = bpy.types.Material
 
     Mat.iileMaterial = bpy.props.EnumProperty(
-        name="IILE Material",
+        name="PBRT Material",
         description="Material type",
         items=[
             ("MATTE", "Matte", "Lambertian Diffuse Material"),
@@ -233,7 +233,7 @@ def register():
     )
 
     Mat.iileEmission = bpy.props.FloatVectorProperty(
-        name="IILE Emission",
+        name="Emission",
         description="Color of the emission",
         subtype="COLOR",
         precision=4,
