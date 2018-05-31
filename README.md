@@ -4,7 +4,7 @@ A blender exporter for PBRTv3. Developed with [PBRTv3-IILE](https://github.com/g
 
 # Quickstart installation and more info
 
-Available at the PBRTv3-IILE wiki: https://github.com/giuliojiang/pbrt-v3-IISPT/wiki
+Please visit [https://osr.jstudios.ovh](https://osr.jstudios.ovh)
 
 # Screenshots
 
