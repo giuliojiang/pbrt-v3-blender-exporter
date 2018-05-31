@@ -14,50 +14,23 @@ import json
 
 import sceneParser
 import install
+import textureUtil
 
 # =============================================================================
 # Find config storage path
 
 currDir = os.path.abspath(os.path.dirname(__file__))
-configDir = bpy.utils.user_resource('CONFIG', path='scripts', create=True)
-pbrtConfigPath = os.path.join(configDir, "pbrt.json")
 
-if not os.path.exists(pbrtConfigPath):
-    # Create default configuration
-    # Try to find an IILE directory within the scripts directory
-    pbrtBuildDir = os.path.join(currDir, "PBRT-IILE", "iile", "build")
-    if not os.path.exists(pbrtBuildDir):
-        pbrtBuildDir = ""
-
-    data = {}
-    data["pbrtBin"] = pbrtBuildDir
-
-    pbrtConfigFile = open(pbrtConfigPath, "w")
-    pbrtConfigFile.write(json.dumps(data))
-    pbrtConfigFile.close()
-
-# Parse the config file
-configFile = open(pbrtConfigPath, "r")
-configFileContent = configFile.read()
-configFile.close()
-configDict = json.loads(configFileContent)
-DEFAULT_IILE_PROJECT_PATH = configDict["pbrtBin"]
-
-def updateConfiguration(pbrtBinPath):
-    data = {}
-    data["pbrtBin"] = os.path.abspath(pbrtBinPath)
-    configFile = open(pbrtConfigPath, "w")
-    configFile.write(json.dumps(data))
-    configFile.close()
+DEFAULT_IILE_PROJECT_PATH = os.path.join(currDir, "PBRT-IILE", "iile", "build")
 
 # Utilities ===============================================================================
 
-def runCmd(cmd, stdout=None, cwd=None):
+def runCmd(cmd, stdout=None, cwd=None, env=None):
     stdoutInfo = ""
     if stdout is not None:
         stdoutInfo = " > {}".format(stdout.name)
     print(">>> {}{}".format(cmd, stdoutInfo))
-    subprocess.call(cmd, shell=False, stdout=stdout, cwd=cwd)
+    subprocess.call(cmd, shell=False, stdout=stdout, cwd=cwd, env=env)
 
 def wline(f, t):
     f.write("{}\n".format(t))
@@ -279,18 +252,26 @@ class IILERenderEngine(bpy.types.RenderEngine):
                         # Diffuse texture
                         # Get the absolute path of the texture
                         print("Texture detected for material {}".format(matName))
-                        texAbsPath = bpy.path.abspath(matObj.iileMatteColorTexture)
-                        print("Abspath is {}".format(texAbsPath))
-                        baseName = os.path.basename(texAbsPath)
-                        destName = "tex_" + baseName
-                        destPath = os.path.join(outDir, destName)
-                        print("Copying to {}".format(destPath))
-                        shutil.copyfile(texAbsPath, destPath)
-                        # Add the texture to the block
-                        textureLine = 'Texture "{}" "color" "imagemap" "string filename" "{}"'.format(baseName, destName)
-                        block.addBeginning(0 ,textureLine)
+                        texSource = matObj.iileMatteColorTexture
+                        destName = textureUtil.addTexture(texSource, outDir, block)
                         # Set Kd to the texture
-                        materialLine = '"texture Kd" "{}"'.format(baseName)
+                        materialLine = '"texture Kd" "{}"'.format(destName)
+                        block.appendLine(2, materialLine)
+                # PLASTIC
+                elif matObj.iileMaterial == "PLASTIC":
+                    block.appendLine(2, '"string type" "plastic"')
+                    if matObj.iilePlasticDiffuseTexture == "":
+                        # Diffuse color
+                        block.appendLine(2, '"rgb Kd" [ {} {} {} ]' \
+                            .format(matObj.iilePlasticDiffuseColor[0],
+                                matObj.iilePlasticDiffuseColor[1],
+                                matObj.iilePlasticDiffuseColor[2]))
+                    else:
+                        # Diffuse texture
+                        texSource = matObj.iilePlasticDiffuseTexture
+                        destName = textureUtil.addTexture(texSource, outDir, block)
+                        # Set Kd
+                        materialLine = '"texture Kd" "{}"'.format(destName)
                         block.appendLine(2, materialLine)
 
                 else:
@@ -307,12 +288,13 @@ class IILERenderEngine(bpy.types.RenderEngine):
 
             # Setup PATH for nodejs executable
             nodeBinDir = install.findNodeDir(scene.iilePath)
+            newEnv = os.environ.copy()
             if nodeBinDir is not None:
-                oldPath = os.environ["PATH"]
-                addition = ':"{}"'.format(nodeBinDir)
+                oldPath = newEnv["PATH"]
+                addition = ':{}'.format(nodeBinDir)
                 if not oldPath.endswith(addition):
                     oldPath = oldPath + addition
-                os.environ["PATH"] = oldPath
+                newEnv["PATH"] = oldPath
                 print("Updated PATH to {}".format(oldPath))
 
             guiDir = os.path.join(rootDir, "gui")
@@ -331,7 +313,7 @@ class IILERenderEngine(bpy.types.RenderEngine):
             cmd.append(outScenePath)
             cmd.append("{}".format(bpy.context.scene.iileIntegratorIileIndirect))
             cmd.append("{}".format(bpy.context.scene.iileIntegratorIileDirect))
-            runCmd(cmd, cwd=guiDir)
+            runCmd(cmd, cwd=guiDir, env=newEnv)
 
         result = self.begin_result(0, 0, sx, sy)
         self.end_result(result)
@@ -385,6 +367,10 @@ class MATERIAL_PT_material(properties_material.MaterialButtonsPanel, Panel):
         if mat.iileMaterial == "MATTE":
             layout.prop(mat, "iileMatteColor", text="Diffuse color")
             layout.prop(mat, "iileMatteColorTexture", text="Diffuse texture")
+        
+        elif mat.iileMaterial == "PLASTIC":
+            layout.prop(mat, "iilePlasticDiffuseColor", text="Diffuse color")
+            layout.prop(mat, "iilePlasticDiffuseTexture", text="Diffuse texture")
 
 class MATERIAL_PT_emission(properties_material.MaterialButtonsPanel, Panel):
     bl_label = "Emission"
@@ -467,7 +453,8 @@ def register():
         name="IILE Material",
         description="Material type",
         items=[
-            ("MATTE", "Matte", "Lambertian Diffuse Material")
+            ("MATTE", "Matte", "Lambertian Diffuse Material"),
+            ("PLASTIC", "Plastic", "Plastic glossy"),
         ]
     )
 
@@ -483,6 +470,23 @@ def register():
     )
 
     Mat.iileMatteColorTexture = bpy.props.StringProperty(
+        name="Diffuse texture",
+        description="Diffuse Texture. Overrides the diffuse color",
+        subtype="FILE_PATH"
+    )
+
+    Mat.iilePlasticDiffuseColor = bpy.props.FloatVectorProperty(
+        name="Diffuse color",
+        description="Diffuse color",
+        subtype="COLOR",
+        precision=4,
+        step=0.01,
+        min=0.0,
+        max=1.0,
+        default=(0.75, 0.75, 0.75)
+    )
+
+    Mat.iilePlasticDiffuseTexture = bpy.props.StringProperty(
         name="Diffuse texture",
         description="Diffuse Texture. Overrides the diffuse color",
         subtype="FILE_PATH"
