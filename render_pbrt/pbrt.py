@@ -76,6 +76,10 @@ class MATERIAL_PT_material(properties_material.MaterialButtonsPanel, Panel):
         elif mat.iileMaterial == "PLASTIC":
             layout.prop(mat, "iilePlasticDiffuseColor", text="Diffuse color")
             layout.prop(mat, "iilePlasticDiffuseTexture", text="Diffuse texture")
+            layout.prop(mat, "iilePlasticSpecularColor", text="Specular color")
+            layout.prop(mat, "iilePlasticSpecularTexture", text="Specular texture")
+            layout.prop(mat, "iilePlasticRoughnessValue", text="Roughness")
+            layout.prop(mat, "iilePlasticRoughnessTexture", text="Roughness texture")
 
 class MATERIAL_PT_emission(properties_material.MaterialButtonsPanel, Panel):
     bl_label = "Emission"
@@ -194,6 +198,37 @@ def register():
     Mat.iilePlasticDiffuseTexture = bpy.props.StringProperty(
         name="Diffuse texture",
         description="Diffuse Texture. Overrides the diffuse color",
+        subtype="FILE_PATH"
+    )
+
+    Mat.iilePlasticSpecularColor = bpy.props.FloatVectorProperty(
+        name="Specular color",
+        description="Specular color",
+        subtype="COLOR",
+        precision=4,
+        step=0.01,
+        min=0.0,
+        max=1.0,
+        default=(0.25, 0.25, 0.25)
+    )
+
+    Mat.iilePlasticSpecularTexture = bpy.props.StringProperty(
+        name="Specular texture",
+        description="Specular Texture. Overrides the specular color",
+        subtype="FILE_PATH"
+    )
+
+    Mat.iilePlasticRoughnessValue = bpy.props.FloatProperty(
+        name="Roughness",
+        description="Roughness. Larger values create blurrier reflections",
+        default=0.1,
+        min=0.0,
+        max=1.0
+    )
+
+    Mat.iilePlasticRoughnessTexture = bpy.props.StringProperty(
+        name="Roughness texture",
+        description="Roughness texture. Overrides the roughness value",
         subtype="FILE_PATH"
     )
 

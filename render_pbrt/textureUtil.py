@@ -9,7 +9,7 @@ def makeNewTextureName(extension):
     globalTextureCounter += 1
     return "tex_{}{}".format(globalTextureCounter, extension)
 
-def addTexture(texSource, outDir, block):
+def addTexture(texSource, outDir, block, texType="color"):
     texAbsPath = bpy.path.abspath(texSource)
     baseName = os.path.basename(texAbsPath)
     stem, ext = os.path.splitext(baseName)
@@ -17,6 +17,8 @@ def addTexture(texSource, outDir, block):
     destPath = os.path.join(outDir, destName)
     shutil.copyfile(texAbsPath, destPath)
     # Add the texture to the block
-    textureLine = 'Texture "{}" "color" "imagemap" "string filename" "{}"'.format(destName, destName)
+    textureLine = 'Texture "{}" "{}" "imagemap" "string filename" "{}"'.format(
+        destName, texType, destName
+    )
     block.addBeginning(0, textureLine)
     return destName

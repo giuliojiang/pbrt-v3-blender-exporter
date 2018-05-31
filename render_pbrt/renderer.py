@@ -58,6 +58,8 @@ def processMatteMaterial(matName, outDir, block, matObj):
 
 def processPlasticMaterial(matName, outDir, block, matObj):
     block.appendLine(2, '"string type" "plastic"')
+
+    # Diffuse
     if matObj.iilePlasticDiffuseTexture == "":
         # Diffuse color
         block.appendLine(2, '"rgb Kd" [ {} {} {} ]' \
@@ -71,6 +73,36 @@ def processPlasticMaterial(matName, outDir, block, matObj):
         # Set Kd
         materialLine = '"texture Kd" "{}"'.format(destName)
         block.appendLine(2, materialLine)
+
+    # Specular
+    if matObj.iilePlasticSpecularTexture == "":
+        # Specular color
+        block.appendLine(2, '"rgb Ks" [ {} {} {} ]'\
+            .format(matObj.iilePlasticSpecularColor[0],
+                matObj.iilePlasticSpecularColor[1],
+                matObj.iilePlasticSpecularColor[2])
+        )
+    else:
+        # Specular texture
+        texSource = matObj.iilePlasticSpecularTexture
+        destName = textureUtil.addTexture(texSource, outDir, block)
+        # Set Kd
+        materialLine = '"texture Ks" "{}"'.format(destName)
+        block.appendLine(2, materialLine)
+
+    # Roughness
+    if matObj.iilePlasticRoughnessTexture == "":
+        roughnessLine = '"float roughness" [{}]'.format(matObj.iilePlasticRoughnessValue)
+        block.appendLine(2, roughnessLine)
+    else:
+        texSource = matObj.iilePlasticRoughnessTexture
+        destName = textureUtil.addTexture(texSource, outDir, block, "float")
+        roughnessLine = '"texture roughness" "{}"'.format(destName)
+        block.appendLine(2, roughnessLine)
+
+    # remaproughness
+    remapLine = '"bool remaproughness" "true"'
+    block.appendLine(2, remapLine)
 
 # Render engine ================================================================================
 
