@@ -105,6 +105,18 @@ class MATERIAL_PT_material(properties_material.MaterialButtonsPanel, Panel):
             layout.prop(mat, "iileMatMixSlot2", text="Mix 2")
             layout.prop(mat, "iileMatMixAmount", text="Amount")
             layout.prop(mat, "iileMatMixAmountTex", text="Amount texture")
+        
+        elif mat.iileMaterial == "GLASS":
+            layout.prop(mat, "iileMatGlassKr", text="Reflectivity")
+            layout.prop(mat, "iileMatGlassKrTex", text="Reflectivity Texture")
+            layout.prop(mat, "iileMatGlassKt", text="Transmission")
+            layout.prop(mat, "iileMatGlassKtTex", text="Transmission Texture")
+            layout.prop(mat, "iileMatGlassIor", text="IOR")
+            layout.prop(mat, "iileMatGlassIorTex", text="IOR Texture")
+            layout.prop(mat, "iileMatGlassURough", text="U Roughness")
+            layout.prop(mat, "iileMatGlassURoughTex", text="U Roughness Texture")
+            layout.prop(mat, "iileMatGlassVRough", text="V Roughness")
+            layout.prop(mat, "iileMatGlassVRoughTex", text="V Roughness Texture")
 
 class MATERIAL_PT_emission(properties_material.MaterialButtonsPanel, Panel):
     bl_label = "Emission"
@@ -244,7 +256,8 @@ def register():
             ("MATTE", "Matte", "Lambertian Diffuse Material"),
             ("PLASTIC", "Plastic", "Plastic glossy"),
             ("MIRROR", "Mirror", "Mirror material"),
-            ("MIX", "Mix", "Mix material")
+            ("MIX", "Mix", "Mix material"),
+            ("GLASS", "Glass", "Glass texture")
         ]
     )
 
@@ -368,6 +381,72 @@ def register():
         description="Mix amount texture. Overrides the Mix Amount",
         subtype="FILE_PATH"
     )
+
+    # Glass material ----------------------------------------------------------
+
+    Mat.iileMatGlassKr = bpy.props.FloatVectorProperty(
+        name="Reflectivity",
+        subtype="COLOR",
+        min=0.0,
+        max=1.0,
+        default=(1.0, 1.0, 1.0)
+    )
+
+    Mat.iileMatGlassKrTex = bpy.props.StringProperty(
+        name="Reflectivity texture",
+        subtype="FILE_PATH"
+    )
+
+    Mat.iileMatGlassKt = bpy.props.FloatVectorProperty(
+        name="Transmission",
+        subtype="COLOR",
+        min=0.0,
+        max=1.0,
+        default=(1.0, 1.0, 1.0)
+    )
+
+    Mat.iileMatGlassKtTex = bpy.props.StringProperty(
+        name="Transmission texture",
+        subtype="FILE_PATH"
+    )
+
+    Mat.iileMatGlassIor = bpy.props.FloatProperty(
+        name="IOR",
+        default=1.5,
+        min=1.0,
+        max=5.0
+    )
+
+    Mat.iileMatGlassIorTex = bpy.props.StringProperty(
+        name="IOR texture",
+        subtype="FILE_PATH"
+    )
+
+    Mat.iileMatGlassURough = bpy.props.FloatProperty(
+        name="U Roughness",
+        default=0.0,
+        min=0.0,
+        max=1.0
+    )
+
+    Mat.iileMatGlassURoughTex = bpy.props.StringProperty(
+        name="U Roughness texture",
+        subtype="FILE_PATH"
+    )
+
+    Mat.iileMatGlassVRough = bpy.props.FloatProperty(
+        name="V Roughness",
+        default=0.0,
+        min=0.0,
+        max=1.0
+    )
+
+    Mat.iileMatGlassVRoughTex = bpy.props.StringProperty(
+        name="V Roughness texture",
+        subtype="FILE_PATH"
+    )
+
+    # Emission material -------------------------------------------------------
 
     Mat.iileEmission = bpy.props.FloatVectorProperty(
         name="Emission",

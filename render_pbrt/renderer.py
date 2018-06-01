@@ -155,6 +155,62 @@ def processMixMaterial(matName, outDir, block, matObj):
     )
     block.appendLine(2, mat2Line)
 
+def processGlassMaterial(matName, outDir, matBlock, matObj):
+    matBlock.appendLine(2, '"string type" "glass"')
+
+    # Kr
+    if matObj.iileMatGlassKrTex == "":
+        krLine = '"rgb Kr" [ {} {} {} ]'.format(matObj.iileMatGlassKr[0], matObj.iileMatGlassKr[1], matObj.iileMatGlassKr[2])
+        matBlock.appendLine(2, krLine)
+    else:
+        texSource = matObj.iileMatGlassKrTex
+        destName = textureUtil.addTexture(texSource, outDir, matBlock)
+        line = '"texture Kr" "{}"'.format(destName)
+        matBlock.appendLine(2, line)
+
+    # Kt
+    if matObj.iileMatGlassKtTex == "":
+        line = '"rgb Kt" [ {} {} {} ]'.format(matObj.iileMatGlassKt[0], matObj.iileMatGlassKt[1], matObj.iileMatGlassKt[2])
+        matBlock.appendLine(2, line)
+    else:
+        texSource = matObj.iileMatGlassKtTex
+        destName = textureUtil.addTexture(texSource, outDir, matBlock)
+        line = '"texture Kr" "{}"'.format(destName)
+        matBlock.appendLine(2, line)
+
+    # Ior
+    if matObj.iileMatGlassIorTex == "":
+        line = '"float eta" [ {} ]'.format(matObj.iileMatGlassIor)
+        matBlock.appendLine(2, line)
+    else:
+        texSource = matObj.iileMatGlassIorTex
+        destName = textureUtil.addTexture(texSource, outDir, matBlock, texType="float")
+        line = '"texture eta" "{}"'.format(destName)
+        matBlock.appendLine(2, line)
+
+    # URough
+    if matObj.iileMatGlassURoughTex == "":
+        line = '"float uroughness" [ {} ]'.format(matObj.iileMatGlassURough)
+        matBlock.appendLine(2, line)
+    else:
+        texSource = matObj.iileMatGlassURoughTex
+        destName = textureUtil.addTexture(texSource, outDir, matBlock, texType="float")
+        line = '"texture uroughness" "{}"'.format(destName)
+        matBlock.appendLine(2, line)
+
+    # VRough
+    if matObj.iileMatGlassVRoughTex == "":
+        line = '"float vroughness" [ {} ]'.format(matObj.iileMatGlassVRough)
+        matBlock.appendLine(2, line)
+    else:
+        texSource = matObj.iileMatGlassVRoughTex
+        destName = textureUtil.addTexture(texSource, outDir, matBlock, texType="float")
+        line = '"texture vroughness" "{}"'.format(destName)
+        matBlock.appendLine(2, line)
+
+    # Remap roughness
+    matBlock.appendLine(2, '"bool remaproughness" "true"')
+
 # Render engine ================================================================================
 
 class IILERenderEngine(bpy.types.RenderEngine):
@@ -342,18 +398,16 @@ class IILERenderEngine(bpy.types.RenderEngine):
             else:
                 matObj = bpy.data.materials[matName]
             # Write material type
-            # MATTE
             if matObj.iileMaterial == "MATTE":
                 processMatteMaterial(matName, outDir, matBlock, matObj)
-            # PLASTIC
             elif matObj.iileMaterial == "PLASTIC":
                 processPlasticMaterial(matName, outDir, matBlock, matObj)
-            # MIRROR
             elif matObj.iileMaterial == "MIRROR":
                 processMirrorMaterial(matName, outDir, matBlock, matObj)
-            # MIX
             elif matObj.iileMaterial == "MIX":
                 processMixMaterial(matName, outDir, matBlock, matObj)
+            elif matObj.iileMaterial == "GLASS":
+                processGlassMaterial(matName, outDir, matBlock, matObj)
 
             else:
                 raise Exception("Unrecognized material {}".format(
