@@ -71,6 +71,7 @@ class WORLD_PT_iileEnv(properties_world.WorldButtonsPanel, Panel):
         layout.prop(world, "iileEnvcolor", "Env Color")
         layout.prop(world, "iileEnvMagnitude", "Env Magnitude")
         layout.prop(world, "iileEnvmapPath", "Env Map")
+        layout.prop(world, "iileEnvmapRotation", "Rotation")
 
 class MATERIAL_PT_material(properties_material.MaterialButtonsPanel, Panel):
     bl_label = "Material"
@@ -224,6 +225,14 @@ def register():
         name="Environment Map Image",
         description="Environment Map Image",
         subtype="FILE_PATH"
+    )
+
+    World.iileEnvmapRotation = bpy.props.FloatProperty(
+        name="Environment map rotation",
+        description="Rotates the environment map on the Z axis. If you need to rotate on other axis, the best option is to select every object in your scene and rotate everything, as the environment map is fixed",
+        default=0.0,
+        min=0.0,
+        max=360.0
     )
 
     Mat = bpy.types.Material

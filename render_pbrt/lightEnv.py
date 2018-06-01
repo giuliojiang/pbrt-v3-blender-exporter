@@ -10,6 +10,7 @@ def createEnvironmentBlock(world, outDir):
     color = world.iileEnvcolor
     magnitude = world.iileEnvMagnitude
     path = world.iileEnvmapPath
+    rot = world.iileEnvmapRotation
 
     if color[0] <= 1e-5 and color[1] <= 1e-5 and color[2] <= 1e-5:
         return None
@@ -18,6 +19,7 @@ def createEnvironmentBlock(world, outDir):
         return None
     
     block.appendLine(1, 'Scale 1 1 -1')
+    block.appendLine(1, 'Rotate {} 0 0 1'.format(rot))
     block.appendLine(1, 'LightSource "infinite"')
     block.appendLine(1, '"rgb L" [ {} {} {} ]'.format(color[0]*magnitude, color[1]*magnitude, color[2]*magnitude))
 
