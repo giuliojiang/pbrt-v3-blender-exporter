@@ -104,6 +104,20 @@ def processPlasticMaterial(matName, outDir, block, matObj):
     remapLine = '"bool remaproughness" "true"'
     block.appendLine(2, remapLine)
 
+def processMirrorMaterial(matName, outDir, block, matObj):
+    block.appendLine(2, '"string type" "mirror"')
+
+    # Reflectivity
+    if matObj.iileMirrorKrTex == "":
+        krLine = '"rgb Kr" [ {} {} {} ]' \
+            .format(matObj.iileMirrorKr[0], matObj.iileMirrorKr[1], matObj.iileMirrorKr[2])
+        block.appendLine(2, krLine)
+    else:
+        texSource = matObj.iileMirrorKrTex
+        destName = textureUtil.addTexture(texSource, outDir, block)
+        krTexLine = '"texture Kr" "{}"'.format(destName)
+        block.appendLine(2, krTexLine)
+
 # Render engine ================================================================================
 
 class IILERenderEngine(bpy.types.RenderEngine):
@@ -311,6 +325,9 @@ class IILERenderEngine(bpy.types.RenderEngine):
                 # PLASTIC
                 elif matObj.iileMaterial == "PLASTIC":
                     processPlasticMaterial(matName, outDir, block, matObj)
+                # MIRROR
+                elif matObj.iileMaterial == "MIRROR":
+                    processMirrorMaterial(matName, outDir, block, matObj)
 
                 else:
                     raise Exception("Unrecognized material {}".format(

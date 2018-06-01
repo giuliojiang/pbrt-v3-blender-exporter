@@ -81,6 +81,10 @@ class MATERIAL_PT_material(properties_material.MaterialButtonsPanel, Panel):
             layout.prop(mat, "iilePlasticRoughnessValue", text="Roughness")
             layout.prop(mat, "iilePlasticRoughnessTexture", text="Roughness texture")
 
+        elif mat.iileMaterial == "MIRROR":
+            layout.prop(mat, "iileMirrorKr", text="Reflectivity")
+            layout.prop(mat, "iileMirrorKrTex", text="Reflectivity texture")
+
 class MATERIAL_PT_emission(properties_material.MaterialButtonsPanel, Panel):
     bl_label = "Emission"
     COMPAT_ENGINES = {renderer.IILERenderEngine.bl_idname}
@@ -145,7 +149,7 @@ def register():
         items=[
             ("RANDOM", "Random", "Random Sampler"),
             ("SOBOL", "Sobol", "Sobol Sampler"),
-            ("HALTON", "Halton", "Halton Sampler")
+            ("HALTON", "Halton", "Halton Sampler"),
         ]
     )
 
@@ -164,6 +168,7 @@ def register():
         items=[
             ("MATTE", "Matte", "Lambertian Diffuse Material"),
             ("PLASTIC", "Plastic", "Plastic glossy"),
+            ("MIRROR", "Mirror", "Mirror material")
         ]
     )
 
@@ -229,6 +234,23 @@ def register():
     Mat.iilePlasticRoughnessTexture = bpy.props.StringProperty(
         name="Roughness texture",
         description="Roughness texture. Overrides the roughness value",
+        subtype="FILE_PATH"
+    )
+
+    Mat.iileMirrorKr = bpy.props.FloatVectorProperty(
+        name="Reflectivity",
+        description="Reflectivity of the mirror material",
+        subtype="COLOR",
+        precision=4,
+        step=0.01,
+        min=0.0,
+        max=1.0,
+        default=(0.9, 0.9, 0.9)
+    )
+
+    Mat.iileMirrorKrTex = bpy.props.StringProperty(
+        name="Reflectivity texture",
+        description="Reflectivity texture for mirror. Overrides the Reflectivity value",
         subtype="FILE_PATH"
     )
 
