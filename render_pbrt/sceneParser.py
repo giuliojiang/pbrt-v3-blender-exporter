@@ -88,6 +88,9 @@ class SceneBlock():
     def clearBody(self):
         if len(self.lines) >= 1:
             self.lines = self.lines[0:1]
+    
+    def clearAll(self):
+        self.lines = []
 
     def getAssignedMaterial(self):
         if self.getBlockType() == "AttributeBegin":
@@ -148,6 +151,12 @@ class SceneDocument():
         for block in self.blocks:
             outFile.write("{}\n".format(block.toString()))
         outFile.close()
+
+    def addBlocksBeginning(self, newBlocks):
+        self.blocks = newBlocks + self.blocks
+
+    def addBlocksEnd(self, newBlocks):
+        self.blocks = self.blocks + newBlocks
 
 # Scene parser end =============================================================
 

@@ -4,6 +4,7 @@ import install
 import pbrt
 import sceneParser
 import generalUtil
+import materialTree
 
 import os
 import math
@@ -11,6 +12,11 @@ import subprocess
 
 # =============================================================================
 # Utils
+
+def dump(obj):
+   for attr in dir(obj):
+       if hasattr( obj, attr ):
+           print( "obj.%s = %s" % (attr, getattr(obj, attr)))
 
 def wline(f, t):
     f.write("{}\n".format(t))
@@ -118,6 +124,36 @@ def processMirrorMaterial(matName, outDir, block, matObj):
         krTexLine = '"texture Kr" "{}"'.format(destName)
         block.appendLine(2, krTexLine)
 
+def processMixMaterial(matName, outDir, block, matObj):
+    block.appendLine(2, '"string type" "mix"')
+
+    # Amount
+    if matObj.iileMatMixAmountTex == "":
+        amountLine = '"rgb amount" [ {} {} {} ]' \
+            .format(
+                matObj.iileMatMixAmount[0],
+                matObj.iileMatMixAmount[1],
+                matObj.iileMatMixAmount[2]
+            )
+        block.appendLine(2, amountLine)
+    else:
+        texSource = matObj.iileMatMixAmountTex
+        destName = textureUtil.addTexture(texSource, outDir, block)
+        amountTexLine = '"texture amount" "{}"'.format(destName)
+        block.appendLine(2, amountTexLine)
+    
+    # Material 1
+    mat1Line = '"string namedmaterial1" "{}"'.format(
+        matObj.iileMatMixSlot1Val
+    )
+    block.appendLine(2, mat1Line)
+
+    # Material 2
+    mat2Line = '"string namedmaterial2" "{}"'.format(
+        matObj.iileMatMixSlot2Val
+    )
+    block.appendLine(2, mat2Line)
+
 # Render engine ================================================================================
 
 class IILERenderEngine(bpy.types.RenderEngine):
@@ -216,12 +252,18 @@ class IILERenderEngine(bpy.types.RenderEngine):
         runCmd(cmd, stdout=outExp2PbrtFile, cwd=outDir)
         outExp2PbrtFile.close()
 
-        # Create headers and footers -------------------------------------------------
-        outSceneFile = open(outScenePath, "w")
+        # -----------------------------------------------------------
+        # Scene transformation
+        doc = sceneParser.SceneDocument()
+        doc.parse(outExp2PbrtPath)
 
-        # Create headers
+        # Write initial things
+        headerBlocks = []
 
-        wline(outSceneFile, 'Film "image" "integer xresolution" {} "integer yresolution" {}'.format(sx, sy))
+        # Film, Camera, transformations
+        b = sceneParser.SceneBlock([])
+        headerBlocks.append(b)
+        b.appendLine(0, 'Film "image" "integer xresolution" {} "integer yresolution" {}'.format(sx, sy))
 
         integratorName = "path"
         if bpy.context.scene.iileIntegrator == "PATH":
@@ -231,7 +273,7 @@ class IILERenderEngine(bpy.types.RenderEngine):
         else:
             raise Exception("Unrecognized iileIntegrator {}".format(
                 bpy.context.scene.iileIntegrator))
-        wline(outSceneFile, 'Integrator "{}"'.format(integratorName))
+        b.appendLine(0, 'Integrator "{}"'.format(integratorName))
 
         samplerName = "random"
         if bpy.context.scene.iileIntegratorPathSampler == "RANDOM":
@@ -243,9 +285,9 @@ class IILERenderEngine(bpy.types.RenderEngine):
         else:
             raise Exception("Unrecognized sampler {}".format(bpy.context.scene.iileIntegratorPathSampler))
 
-        wline(outSceneFile, 'Sampler "{}" "integer pixelsamples" {}'.format(samplerName, bpy.context.scene.iileIntegratorPathSamples))
+        b.appendLine(0, 'Sampler "{}" "integer pixelsamples" {}'.format(samplerName, bpy.context.scene.iileIntegratorPathSamples))
 
-        wline(outSceneFile, 'Scale -1 1 1')
+        b.appendLine(0, 'Scale -1 1 1')
 
         # Get camera
         theCameraName = bpy.context.scene.camera.name
@@ -261,7 +303,7 @@ class IILERenderEngine(bpy.types.RenderEngine):
             bpy.context.scene.camera.rotation_axis_angle[1:]
         # Flip Y
         cameraRotationY = -cameraRotationY
-        wline(outSceneFile, 'Rotate {} {} {} {}'.format(
+        b.appendLine(0, 'Rotate {} {} {} {}'.format(
             cameraRotationAmount, cameraRotationX,
             cameraRotationY, cameraRotationZ))
 
@@ -269,29 +311,48 @@ class IILERenderEngine(bpy.types.RenderEngine):
         cameraLocX, cameraLocY, cameraLocZ = bpy.context.scene.camera.location
         # Flip Y
         cameraLocY = -cameraLocY
-        wline(outSceneFile, 'Translate {} {} {}'.format(
+        b.appendLine(0, 'Translate {} {} {}'.format(
             cameraLocX, cameraLocY, cameraLocZ))
 
         # Write camera fov
-        wline(outSceneFile, 'Camera "perspective" "float fov" [{}]'.format(math.degrees(theCamera.angle / 2.0)))
+        b.appendLine(0, 'Camera "perspective" "float fov" [{}]'.format(math.degrees(theCamera.angle / 2.0)))
 
         # Write world begin
-        wline(outSceneFile, 'WorldBegin')
+        b.appendLine(0, 'WorldBegin')
 
-        # Copy content from outExp2Pbrt
-        appendFile(outExp2PbrtPath, outSceneFile)
+        # Do materials
+        materialsResolutionOrder = materialTree.buildMaterialsDependencies()
 
-        # Write world end
-        wline(outSceneFile, 'WorldEnd')
+        for i in range(len(materialsResolutionOrder)):
+            matName = materialsResolutionOrder[i]
+            matBlock = sceneParser.SceneBlock([])
+            headerBlocks.append(matBlock)
 
-        outSceneFile.close()
+            matBlock.appendLine(0, 'MakeNamedMaterial "{}"'.format(matName))
+            print("Processing material {}".format(matName))
+            if matName not in bpy.data.materials:
+                matObj = createEmptyMaterialObject()
+            else:
+                matObj = bpy.data.materials[matName]
+            # Write material type
+            # MATTE
+            if matObj.iileMaterial == "MATTE":
+                processMatteMaterial(matName, outDir, matBlock, matObj)
+            # PLASTIC
+            elif matObj.iileMaterial == "PLASTIC":
+                processPlasticMaterial(matName, outDir, matBlock, matObj)
+            # MIRROR
+            elif matObj.iileMaterial == "MIRROR":
+                processMirrorMaterial(matName, outDir, matBlock, matObj)
+            # MIX
+            elif matObj.iileMaterial == "MIX":
+                processMixMaterial(matName, outDir, matBlock, matObj)
 
-        # -----------------------------------------------------------
-        # Scene transformation
-        doc = sceneParser.SceneDocument()
-        doc.parse(outScenePath)
+            else:
+                raise Exception("Unrecognized material {}".format(
+                    matObj.iileMaterial))
+
         blocks = doc.getBlocks()
-
         for block in blocks:
 
             # Set area light emission color
@@ -299,6 +360,8 @@ class IILERenderEngine(bpy.types.RenderEngine):
                 print("Processing an area light source")
                 matName = block.getAssignedMaterial()
                 print(matName)
+                if matName not in bpy.data.materials:
+                    continue
                 matObj = bpy.data.materials[matName]
                 emitIntensity = matObj.emit
                 emitColor = [0.0, 0.0, 0.0]
@@ -311,28 +374,14 @@ class IILERenderEngine(bpy.types.RenderEngine):
 
             # Set material properties
             if block.isMakeNamedMaterial():
-                matName = block.getMaterialDefinitionName()
-                print("Processing material {}".format(matName))
-                if matName not in bpy.data.materials:
-                    matObj = createEmptyMaterialObject()
-                else:
-                    matObj = bpy.data.materials[matName]
-                block.clearBody()
-                # Write material type
-                # MATTE
-                if matObj.iileMaterial == "MATTE":
-                    processMatteMaterial(matName, outDir, block, matObj)
-                # PLASTIC
-                elif matObj.iileMaterial == "PLASTIC":
-                    processPlasticMaterial(matName, outDir, block, matObj)
-                # MIRROR
-                elif matObj.iileMaterial == "MIRROR":
-                    processMirrorMaterial(matName, outDir, block, matObj)
+                block.clearAll()
 
-                else:
-                    raise Exception("Unrecognized material {}".format(
-                        matObj.iileMaterial))
+        doc.addBlocksBeginning(headerBlocks)
 
+        # WorldEnd block
+        weBlock = sceneParser.SceneBlock([])
+        weBlock.appendLine(0, "WorldEnd")
+        doc.addBlocksEnd([weBlock])
 
         doc.write(outScenePath)
 

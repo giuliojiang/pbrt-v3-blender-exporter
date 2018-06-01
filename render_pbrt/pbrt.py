@@ -85,6 +85,12 @@ class MATERIAL_PT_material(properties_material.MaterialButtonsPanel, Panel):
             layout.prop(mat, "iileMirrorKr", text="Reflectivity")
             layout.prop(mat, "iileMirrorKrTex", text="Reflectivity texture")
 
+        elif mat.iileMaterial == "MIX":
+            layout.prop(mat, "iileMatMixSlot1", text="Mix 1")
+            layout.prop(mat, "iileMatMixSlot2", text="Mix 2")
+            layout.prop(mat, "iileMatMixAmount", text="Amount")
+            layout.prop(mat, "iileMatMixAmountTex", text="Amount texture")
+
 class MATERIAL_PT_emission(properties_material.MaterialButtonsPanel, Panel):
     bl_label = "Emission"
     COMPAT_ENGINES = {renderer.IILERenderEngine.bl_idname}
@@ -99,6 +105,28 @@ class MATERIAL_PT_emission(properties_material.MaterialButtonsPanel, Panel):
         layout.prop(mat, "iileEmission", text="Emission color")
 
 # Register ==================================================================
+
+def iileMatMixGenMaterials(self, context):
+    try:
+        res = []
+        theObj = context.object
+        theMaterials = theObj.material_slots
+        currMatIndex = theObj.active_material_index
+        for i in range(len(theMaterials)):
+            if i != currMatIndex:
+                matName = theMaterials[i].name
+                newVal = (matName, matName, matName)
+                res.append(newVal)
+
+        return res
+    except:
+        return [("", "", "")]
+
+def updateMatMixSlot1Val(self, context):
+    context.material.iileMatMixSlot1Val = context.material.iileMatMixSlot1
+
+def updateMatMixSlot2Val(self, context):
+    context.material.iileMatMixSlot2Val = context.material.iileMatMixSlot2
 
 def register():
     bpy.utils.register_class(renderer.IILERenderEngine)
@@ -168,7 +196,8 @@ def register():
         items=[
             ("MATTE", "Matte", "Lambertian Diffuse Material"),
             ("PLASTIC", "Plastic", "Plastic glossy"),
-            ("MIRROR", "Mirror", "Mirror material")
+            ("MIRROR", "Mirror", "Mirror material"),
+            ("MIX", "Mix", "Mix material")
         ]
     )
 
@@ -251,6 +280,45 @@ def register():
     Mat.iileMirrorKrTex = bpy.props.StringProperty(
         name="Reflectivity texture",
         description="Reflectivity texture for mirror. Overrides the Reflectivity value",
+        subtype="FILE_PATH"
+    )
+
+    Mat.iileMatMixSlot1Val = bpy.props.StringProperty(
+        name="Slot 1 hidden"
+    )
+
+    Mat.iileMatMixSlot2Val = bpy.props.StringProperty(
+        name="Slot 2 hidden"
+    )
+
+    Mat.iileMatMixSlot1 = bpy.props.EnumProperty(
+        name="Mix 1",
+        description="Choose the first material to be mixed. If the slot is empty, please add a new material to this object using the + button in the section above and creating a new material. Then come back to this material and you'll be able to assign the other material as the first one to be mixed.",
+        items=iileMatMixGenMaterials,
+        update=updateMatMixSlot1Val
+    )
+
+    Mat.iileMatMixSlot2 = bpy.props.EnumProperty(
+        name="Mix 2",
+        description="Choose the second material to be mixed. If the slot is empty, please add a new material to this object using the + button in the section above and creating a new material. Then come back to this material and you'll be able to assign the other material as the second one to be mixed.",
+        items=iileMatMixGenMaterials,
+        update=updateMatMixSlot2Val
+    )
+
+    Mat.iileMatMixAmount = bpy.props.FloatVectorProperty(
+        name="Mix amount",
+        description="Mix amount",
+        subtype="COLOR",
+        precision=4,
+        step=0.01,
+        min=0.0,
+        max=1.0,
+        default=(0.9, 0.9, 0.9)
+    )
+
+    Mat.iileMatMixAmountTex = bpy.props.StringProperty(
+        name="Mix amount texture",
+        description="Mix amount texture. Overrides the Mix Amount",
         subtype="FILE_PATH"
     )
 
