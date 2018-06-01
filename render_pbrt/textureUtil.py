@@ -22,3 +22,16 @@ def addTexture(texSource, outDir, block, texType="color"):
     )
     block.addBeginning(0, textureLine)
     return destName
+
+def copyTexture(texSource, outDir):
+    texAbsPath = bpy.path.abspath(texSource)
+    baseName = os.path.basename(texAbsPath)
+    stem, ext = os.path.splitext(baseName)
+    destName = makeNewTextureName(ext)
+    destPath = os.path.join(outDir, destName)
+    shutil.copyfile(texAbsPath, destPath)
+    return destName
+
+def resetTextureCounter():
+    global globalTextureCounter
+    globalTextureCounter = 0

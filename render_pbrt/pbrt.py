@@ -2,7 +2,8 @@ import bpy
 from bl_ui import (
     properties_render,
     properties_material,
-    properties_data_camera
+    properties_data_camera,
+    properties_world
 )
 from bpy.types import Menu, Panel
 import os
@@ -57,6 +58,19 @@ class RENDER_PT_iile(properties_render.RenderButtonsPanel, Panel):
 
         else:
             raise Exception("Unsupported integrator {}".format(bpy.context.scene.iileIntegrator))
+
+class WORLD_PT_iileEnv(properties_world.WorldButtonsPanel, Panel):
+    bl_label = "Environment map"
+    COMPAT_ENGINES = {renderer.IILERenderEngine.bl_idname}
+
+    def draw(self, context):
+        layout = self.layout
+
+        world = context.world
+
+        layout.prop(world, "iileEnvcolor", "Env Color")
+        layout.prop(world, "iileEnvMagnitude", "Env Magnitude")
+        layout.prop(world, "iileEnvmapPath", "Env Map")
 
 class MATERIAL_PT_material(properties_material.MaterialButtonsPanel, Panel):
     bl_label = "Material"
@@ -186,6 +200,30 @@ def register():
         description="Number of samples/px",
         default=4,
         min=1
+    )
+
+    World = bpy.types.World
+
+    World.iileEnvcolor = bpy.props.FloatVectorProperty(
+        name="Environment Color",
+        description="Environment Color Multiplier",
+        subtype="COLOR",
+        min=0.0,
+        max=1.0,
+        default=(0.0, 0.0, 0.0)
+    )
+
+    World.iileEnvMagnitude = bpy.props.FloatProperty(
+        name="Environment Magnitude",
+        description="Environment Magnitude",
+        default=1.0,
+        min=0.0
+    )
+
+    World.iileEnvmapPath = bpy.props.StringProperty(
+        name="Environment Map Image",
+        description="Environment Map Image",
+        subtype="FILE_PATH"
     )
 
     Mat = bpy.types.Material
@@ -344,6 +382,8 @@ def register():
     bpy.utils.register_class(RENDER_PT_output)
     # IILE Settings
     bpy.utils.register_class(RENDER_PT_iile)
+
+    bpy.utils.register_class(WORLD_PT_iileEnv)
 
     # Material slots
     properties_material.MATERIAL_PT_context_material.COMPAT_ENGINES.add(renderer.IILERenderEngine.bl_idname)

@@ -5,6 +5,7 @@ import pbrt
 import sceneParser
 import generalUtil
 import materialTree
+import lightEnv
 
 import os
 import math
@@ -172,6 +173,7 @@ class IILERenderEngine(bpy.types.RenderEngine):
         sy = int(scene.render.resolution_y * scale)
 
         print("Starting render, resolution {} {}".format(sx, sy))
+        textureUtil.resetTextureCounter()
 
         # Compute pbrt executable path
         pbrtExecPath = install.getExecutablePath(
@@ -319,6 +321,11 @@ class IILERenderEngine(bpy.types.RenderEngine):
 
         # Write world begin
         b.appendLine(0, 'WorldBegin')
+
+        # Set environment lighting
+        envBlock = lightEnv.createEnvironmentBlock(scene.world, outDir)
+        if envBlock is not None:
+            headerBlocks.append(envBlock)
 
         # Do materials
         materialsResolutionOrder = materialTree.buildMaterialsDependencies()
