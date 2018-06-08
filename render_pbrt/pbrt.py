@@ -26,8 +26,8 @@ DEFAULT_IILE_PROJECT_PATH = os.path.join(currDir, "PBRT-IILE", "iile", "build")
 
 # UI elements =======================================================
 
-class RENDER_PT_output(properties_render.RenderButtonsPanel, Panel):
-    bl_label = "Output"
+class RENDER_PT_pbrtoutput(properties_render.RenderButtonsPanel, Panel):
+    bl_label = "PBRT Output"
     COMPAT_ENGINES = {renderer.IILERenderEngine.bl_idname}
 
     def draw(self, context):
@@ -463,12 +463,12 @@ def register():
     # UI -------------------------------------------------------------
 
     # Render Button
-    properties_render.RENDER_PT_render.COMPAT_ENGINES.add(renderer.IILERenderEngine.bl_idname)
+    properties_render.RENDER_PT_output.COMPAT_ENGINES.add(renderer.IILERenderEngine.bl_idname)
     # Dimensions
     properties_render.RENDER_PT_dimensions.COMPAT_ENGINES.add(
         renderer.IILERenderEngine.bl_idname)
     # Output
-    bpy.utils.register_class(RENDER_PT_output)
+    bpy.utils.register_class(RENDER_PT_pbrtoutput)
     # IILE Settings
     bpy.utils.register_class(RENDER_PT_iile)
 
@@ -487,6 +487,6 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(renderer.IILERenderEngine)
-    properties_render.RENDER_PT_render.COMPAT_ENGINES.remove(renderer.IILERenderEngine.bl_idname)
+    properties_render.RENDER_PT_pbrtoutput.COMPAT_ENGINES.remove(renderer.IILERenderEngine.bl_idname)
     properties_material.MATERIAL_PT_preview.COMPAT_ENGINES.remove(
         renderer.IILERenderEngine.bl_idname)
