@@ -27,5 +27,7 @@ def createEnvironmentBlock(world, outDir):
         texName = textureUtil.copyTexture(path, outDir)
         block.appendLine(1, '"string mapname" "{}"'.format(texName))
 
+    block.appendLine(1, '"integer samples" [4]')
+
     block.appendLine(0, "AttributeEnd")
     return block

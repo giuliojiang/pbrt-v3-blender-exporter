@@ -257,7 +257,8 @@ def register():
             ("PLASTIC", "Plastic", "Plastic glossy"),
             ("MIRROR", "Mirror", "Mirror material"),
             ("MIX", "Mix", "Mix material"),
-            ("GLASS", "Glass", "Glass texture")
+            ("GLASS", "Glass", "Glass material"),
+            ("NONE", "None", "None material")
         ]
     )
 

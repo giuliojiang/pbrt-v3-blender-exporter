@@ -211,6 +211,9 @@ def processGlassMaterial(matName, outDir, matBlock, matObj):
     # Remap roughness
     matBlock.appendLine(2, '"bool remaproughness" "true"')
 
+def processNoneMaterial(matName, outDir, matBlock, matObj):
+    matBlock.appendLine(2, '"string type" "none"')
+
 # Render engine ================================================================================
 
 class IILERenderEngine(bpy.types.RenderEngine):
@@ -408,6 +411,8 @@ class IILERenderEngine(bpy.types.RenderEngine):
                 processMixMaterial(matName, outDir, matBlock, matObj)
             elif matObj.iileMaterial == "GLASS":
                 processGlassMaterial(matName, outDir, matBlock, matObj)
+            elif matObj.iileMaterial == "NONE":
+                processNoneMaterial(matName, outDir, matBlock, matObj)
 
             else:
                 raise Exception("Unrecognized material {}".format(
