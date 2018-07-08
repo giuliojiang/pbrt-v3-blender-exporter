@@ -35,6 +35,13 @@ def appendFile(sourcePath, destFile):
         destFile.write(line)
     sourceFile.close()
 
+def warningMessage(renderContext, message):
+    renderContext.report({"WARNING"}, message)
+
+def errorMessage(renderContext, message):
+    renderContext.report({"ERROR"}, message)
+    raise Exception(message)
+
 # =============================================================================
 # Materials generation
 
@@ -247,9 +254,9 @@ class IILERenderEngine(bpy.types.RenderEngine):
         )
 
         if pbrtExecPath is None:
-            raise Exception("PBRT executable not found")
+            errorMessage(self, "PBRT executable not found. The exporter can use the pbrt executable if it's in the system PATH, or you can specify the directory of the PBRT executable from the Render properties tab")
         if obj2pbrtExecPath is None:
-            raise Exception("OBJ2PBRT executable not found")
+            errorMessage(self, "obj2pbrt executable not found. The exporter can use the obj2pbrt executable if it's in the system PATH, or you can specify the directory of the PBRT and OBJ2PBRT executables from the Render properties tab")
 
         print("PBRT: {}".format(pbrtExecPath))
         print("OBJ2PBRT: {}".format(obj2pbrtExecPath))
@@ -258,7 +265,7 @@ class IILERenderEngine(bpy.types.RenderEngine):
         if not os.path.exists(scene.iilePath):
             # Check fallback
             if not os.path.exists(pbrt.DEFAULT_IILE_PROJECT_PATH):
-                print("WARNING no project directory found. Are you using vanilla PBRTv3? Some features might not work, such as IILE integrator and GUI renderer")
+                warningMessage(self, "WARNING no project directory found. Are you using vanilla PBRTv3? Some features might not work, such as IILE integrator and GUI renderer")
             else:
                 scene.iilePath = pbrt.DEFAULT_IILE_PROJECT_PATH
 
@@ -283,6 +290,8 @@ class IILERenderEngine(bpy.types.RenderEngine):
 
         blenderPath = bpy.app.binary_path
         projectPath = bpy.data.filepath
+        if not os.path.isfile(projectPath):
+            errorMessage(self, "Please Save before Render")
 
         cmd = [
             blenderPath,
@@ -332,7 +341,7 @@ class IILERenderEngine(bpy.types.RenderEngine):
         elif bpy.context.scene.iileIntegrator == "IILE":
             integratorName = "iispt"
         else:
-            raise Exception("Unrecognized iileIntegrator {}".format(
+            errorMessage(self, "Unrecognized iileIntegrator {}".format(
                 bpy.context.scene.iileIntegrator))
         b.appendLine(0, 'Integrator "{}"'.format(integratorName))
 
@@ -344,7 +353,7 @@ class IILERenderEngine(bpy.types.RenderEngine):
         elif bpy.context.scene.iileIntegratorPathSampler == "HALTON":
             samplerName = "halton"
         else:
-            raise Exception("Unrecognized sampler {}".format(bpy.context.scene.iileIntegratorPathSampler))
+            errorMessage(self, "Unrecognized sampler {}".format(bpy.context.scene.iileIntegratorPathSampler))
 
         b.appendLine(0, 'Sampler "{}" "integer pixelsamples" {}'.format(samplerName, bpy.context.scene.iileIntegratorPathSamples))
 
@@ -415,7 +424,7 @@ class IILERenderEngine(bpy.types.RenderEngine):
                 processNoneMaterial(matName, outDir, matBlock, matObj)
 
             else:
-                raise Exception("Unrecognized material {}".format(
+                errorMessage(self, "Unrecognized material {}".format(
                     matObj.iileMaterial))
 
         blocks = doc.getBlocks()
