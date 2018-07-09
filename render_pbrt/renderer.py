@@ -335,15 +335,27 @@ class IILERenderEngine(bpy.types.RenderEngine):
         headerBlocks.append(b)
         b.appendLine(0, 'Film "image" "integer xresolution" {} "integer yresolution" {}'.format(sx, sy))
 
+        # Integrator name
         integratorName = "path"
         if bpy.context.scene.iileIntegrator == "PATH":
             integratorName = "path"
         elif bpy.context.scene.iileIntegrator == "IILE":
             integratorName = "iispt"
+        elif bpy.context.scene.iileIntegrator == "BDPT":
+            integratorName = "bdpt"
         else:
             errorMessage(self, "Unrecognized iileIntegrator {}".format(
                 bpy.context.scene.iileIntegrator))
         b.appendLine(0, 'Integrator "{}"'.format(integratorName))
+
+        # Integrator specifics
+        if bpy.context.scene.iileIntegrator == "PATH":
+            pass
+        elif bpy.context.scene.iileIntegrator == "BDPT":
+            b.appendLine(1, '"integer maxdepth" [{}]'.format(bpy.context.scene.iileIntegratorBdptMaxdepth))
+            b.appendLine(1, '"string lightsamplestrategy" "{}"'.format(bpy.context.scene.iileIntegratorBdptLightsamplestrategy.lower()))
+            b.appendLine(1, '"bool visualizestrategies" "{}"'.format("true" if bpy.context.scene.iileIntegratorBdptVisualizestrategies else "false"))
+            b.appendLine(1, '"bool visualizeweights" "{}"'.format("true" if bpy.context.scene.iileIntegratorBdptVisualizeweights else "false"))
 
         samplerName = "random"
         if bpy.context.scene.iileIntegratorPathSampler == "RANDOM":

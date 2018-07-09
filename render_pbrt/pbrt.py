@@ -55,6 +55,12 @@ class RENDER_PT_iile(properties_render.RenderButtonsPanel, Panel):
         elif bpy.context.scene.iileIntegrator == "PATH":
             layout.prop(s, "iileIntegratorPathSampler", text="Sampler")
             layout.prop(s, "iileIntegratorPathSamples", text="Samples")
+        
+        elif bpy.context.scene.iileIntegrator == "BDPT":
+            layout.prop(s, "iileIntegratorBdptMaxdepth", text="Max Depth")
+            layout.prop(s, "iileIntegratorBdptLightsamplestrategy", text="Light Sample Strategy")
+            layout.prop(s, "iileIntegratorBdptVisualizestrategies", text="Visualize Strategies")
+            layout.prop(s, "iileIntegratorBdptVisualizeweights", text="Visualize weights")
 
         else:
             raise Exception("Unsupported integrator {}".format(bpy.context.scene.iileIntegrator))
@@ -180,7 +186,8 @@ def register():
         description="Surface Integrator",
         items=[
             ("PATH", "Path", "Path Integrator"),
-            ("IILE", "OSR", "OSR Integrator")
+            ("IILE", "OSR", "OSR Integrator"),
+            ("BDPT", "BDPT", "BDPT Integrator")
         ]
     )
 
@@ -213,6 +220,32 @@ def register():
         description="Number of samples/px",
         default=4,
         min=1
+    )
+
+    Scene.iileIntegratorBdptMaxdepth = bpy.props.IntProperty(
+        name="Max Depth",
+        default=5,
+        min=0,
+        max=128
+    )
+
+    Scene.iileIntegratorBdptLightsamplestrategy = bpy.props.EnumProperty(
+        name="Light Sample Strategy",
+        items=[
+            ("POWER", "Power", "samples light sources according to their emitted power"),
+            ("UNIFORM", "Uniform", "samples all light sources uniformly"),
+            ("SPATIAL", "Spatial", "computes light contributions in regions of the scene and samples from a related distribution")
+        ]
+    )
+
+    Scene.iileIntegratorBdptVisualizestrategies = bpy.props.BoolProperty(
+        name="Visualize Strategies",
+        default=False
+    )
+
+    Scene.iileIntegratorBdptVisualizeweights = bpy.props.BoolProperty(
+        name="Visualize Weights",
+        default=False
     )
 
     World = bpy.types.World
