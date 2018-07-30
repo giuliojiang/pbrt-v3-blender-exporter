@@ -57,6 +57,8 @@ class RENDER_PT_iile(properties_render.RenderButtonsPanel, Panel):
             layout.prop(s, "iileIntegratorPathSamples", text="Samples")
         
         elif bpy.context.scene.iileIntegrator == "BDPT":
+            layout.prop(s, "iileIntegratorPathSampler", text="Sampler")
+            layout.prop(s, "iileIntegratorPathSamples", text="Samples")
             layout.prop(s, "iileIntegratorBdptMaxdepth", text="Max Depth")
             layout.prop(s, "iileIntegratorBdptLightsamplestrategy", text="Light Sample Strategy")
             layout.prop(s, "iileIntegratorBdptVisualizestrategies", text="Visualize Strategies")
