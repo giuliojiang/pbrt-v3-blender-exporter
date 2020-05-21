@@ -1,5 +1,9 @@
 # blendPBRTv3
 
+Compatible with Blender 2.7x.
+
+There are no current plans for Blender 2.8x versions.
+
 A blender exporter for PBRTv3. Developed with [PBRTv3-IILE](https://github.com/giuliojiang/pbrt-v3-IISPT) but also compatible with standard PBRTv3.
 
 # Quickstart installation and more info
